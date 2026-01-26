@@ -11,12 +11,13 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<AdminLogin />} />
+         <Route path="/" element={<Home />} />
+        <Route path="/login" element={<AdminLogin />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin/orders" element={<OrdersList />} />
         <Route path="/admin/new-order" element={<NewOrder />} />
         <Route path="/admin/orders/:id" element={<OrderDetail />} />
-        <Route path="/home" element={<Home />} />
+       
       </Routes>
     </Router>
   );
