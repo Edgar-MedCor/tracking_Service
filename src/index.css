@@ -17,6 +17,18 @@
 }
 
 
+@font-face {
+  font-family: "Almarose";
+  src: url("/fonts/almarose-regular-1.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "FuturaBold";
+  src: url("/fonts/Futura-Bold-3.woff2") format("woff2");
+}
+
+
+
 body {
   font-family: "Almarose", serif;
   color: #6B4E2E;
