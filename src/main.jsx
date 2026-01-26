@@ -8,3 +8,4 @@ createRoot(document.getElementById('tracking-app')).render(
     <App />
   </StrictMode>,
 )
+

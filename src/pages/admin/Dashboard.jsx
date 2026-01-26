@@ -195,7 +195,7 @@ export default function Dashboard() {
               Panel de Control del Taller
             </h1>
             <p className="text-sm text-[#B08968] font-light">
-              Sistema de seguimiento de órdenes Ultrajewels
+              Sistema de seguimiento de órdenes Ultrajewels,
             </p>
           </div>
         </div>
@@ -376,6 +376,8 @@ export default function Dashboard() {
                         {index === 2 && "Esperando repuestos"}
                         {index === 3 && "En proceso de reparación"}
                         {index === 4 && "Control de calidad final"}
+                        {index === 5 && "Lista para retiro"}
+                        {index === 5 && "Lista para retiro"}
                         {index === 5 && "Lista para retiro"}
                       </p>
                     </div>
