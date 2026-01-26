@@ -1,0 +1,83 @@
+
+:root {
+  --swal2-confirm-button-bg: #ff8c00;
+  --swal2-confirm-button-border-color: #e67e00;
+  --swal2-cancel-button-bg: #ffffff;
+  --swal2-cancel-button-border-color: #6B4E2E;
+  --swal2-cancel-button-color: #6B4E2E;
+  --swal2-title-color: #6B4E2E;
+  --swal2-html-container-color: #B08968;
+  --swal2-border: 1px solid #e8e2d9;
+  --swal2-background: #ffffff;
+  --swal2-border-radius: 0.75rem;
+  --swal2-confirm-button-border-radius: 0.5rem;
+  --swal2-cancel-button-border-radius: 0.5rem;
+}
+
+.swal2-popup {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 300;
+  border: 1px solid #e8e2d9;
+  box-shadow: 0 10px 25px rgba(107, 78, 46, 0.1);
+  border-radius: 0
+}
+
+.swal2-title {
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #6B4E2E;
+  font-size: 1.5rem;
+}
+
+.swal2-confirm {
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  transition: all 0.3s;
+  background-color: #ff8c00 !important;
+  border: none !important;
+  color: white !important;
+}
+
+.swal2-confirm:hover {
+  background-color: #e67e00 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 140, 0, 0.3);
+}
+
+.swal2-cancel {
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  transition: all 0.3s;
+  background-color: white !important;
+  border: 1px solid #6B4E2E !important;
+  color: #6B4E2E !important;
+}
+
+.swal2-cancel:hover {
+  background-color: #faf8f5 !important;
+  border-color: #ff8c00 !important;
+  color: #6B4E2E !important;
+}
+
+.swal2-html-container {
+  color: #B08968;
+  font-weight: 300;
+}
+
+.swal2-icon {
+  border-color: #ff8c00;
+}
+
+.swal2-success {
+  border-color: #ff8c00;
+}
+
+.swal2-success [class^="swal2-success-line"] {
+  background-color: #ff8c00;
+}
+
+.swal2-success .swal2-success-ring {
+  border-color: rgba(255, 140, 0, 0.3);
+}
+
+
