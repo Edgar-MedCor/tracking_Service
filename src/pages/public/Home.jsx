@@ -63,7 +63,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+   
 
       <main className="container mx-auto px-6 py-16">
         {currentView === "search" && (

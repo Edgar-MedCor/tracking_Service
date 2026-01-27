@@ -72,10 +72,6 @@ export default function NewOrder() {
     }
   };
 
-
- 
-
-
   return (
     <AdminLayout>
       <div className="max-w-4xl mx-auto">
@@ -166,7 +162,7 @@ export default function NewOrder() {
               </div>
             </div>
           </div>
-
+          
           
           <div className="bg-white p-8 border border-[#e8e2d9] shadow-sm">
             <h2 className="font-light text-lg text-[#6B4E2E] mb-6 tracking-wider">
