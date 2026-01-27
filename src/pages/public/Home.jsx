@@ -1,6 +1,5 @@
-import  { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "../../components/public/Header";
-
 import recibidoIcon from "../public/assets/Recibido__Icono.png";
 import diagnosticoIcon from "../public/assets/Diagnostico_Icono.png";
 import tallerIcon from "../public/assets/En_Taller_Icono.png";
@@ -10,6 +9,107 @@ export default function Home() {
   const [orderNumber, setOrderNumber] = useState("");
   const [currentView, setCurrentView] = useState("search");
   const [searchError, setSearchError] = useState("");
+
+  // Efecto para ocultar scrollbars globalmente
+  useEffect(() => {
+    // Función para aplicar estilos
+    const applyScrollbarStyles = () => {
+      // Para el body
+      document.body.style.overflow = 'auto';
+      document.body.style.scrollbarWidth = 'none';
+      document.body.style.msOverflowStyle = 'none';
+      document.body.style.margin = '0';
+      document.body.style.padding = '0';
+      document.body.style.width = '100%';
+      
+      // Para el html
+      document.documentElement.style.overflow = 'auto';
+      document.documentElement.style.scrollbarWidth = 'none';
+      document.documentElement.style.msOverflowStyle = 'none';
+      document.documentElement.style.margin = '0';
+      document.documentElement.style.padding = '0';
+      
+      // Agregar estilos CSS globales
+      const styleId = 'hide-scrollbars-global';
+      let style = document.getElementById(styleId);
+      
+      if (!style) {
+        style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = `
+          /* Oculta todas las scrollbars pero mantiene funcionalidad */
+          ::-webkit-scrollbar {
+            display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            background: transparent !important;
+          }
+          
+          * {
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+          }
+          
+          /* Asegura que todo el contenido esté centrado y sin desbordes */
+          body, #root {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+          }
+          
+          /* Para el contenido principal */
+          .main-content {
+            margin-left: auto !important;
+            margin-right: auto !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    };
+    
+    // Aplicar estilos inmediatamente
+    applyScrollbarStyles();
+    
+    // Aplicar también después de que el DOM esté completamente cargado
+    const timer = setTimeout(applyScrollbarStyles, 100);
+    
+    // Observar cambios en el DOM para reaplicar estilos si es necesario
+    const observer = new MutationObserver(applyScrollbarStyles);
+    observer.observe(document.body, { 
+      childList: true, 
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style', 'class']
+    });
+    
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      
+      // Limpiar estilos
+      const style = document.getElementById('hide-scrollbars-global');
+      if (style) {
+        style.remove();
+      }
+      
+      // Restaurar estilos del body
+      document.body.style.overflow = '';
+      document.body.style.scrollbarWidth = '';
+      document.body.style.msOverflowStyle = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+      document.body.style.width = '';
+      
+      // Restaurar estilos del html
+      document.documentElement.style.overflow = '';
+      document.documentElement.style.scrollbarWidth = '';
+      document.documentElement.style.msOverflowStyle = '';
+      document.documentElement.style.margin = '';
+      document.documentElement.style.padding = '';
+    };
+  }, []);
 
   const orderDetails = {
     orderNumber: "UJ-2026-002",
@@ -25,10 +125,8 @@ export default function Home() {
       type: "Collar",
       brand: "Cartier",
       service: "Reparación",
-      description:
-        "Collar de diamantes con engaste invisible en oro blanco 18k",
-      diagnosis:
-        "Dos diamantes presentan engastes flojos. Se procederá a reforzar todos los engastes.",
+      description: "Collar de diamantes con engaste invisible en oro blanco 18k",
+      diagnosis: "Dos diamantes presentan engastes flojos. Se procederá a reforzar todos los engastes.",
     },
   };
 
@@ -50,41 +148,82 @@ export default function Home() {
     setSearchError("");
   };
 
-const totalSteps = orderDetails.timeline.length;
-const completedCount = orderDetails.timeline.filter(s => s.completed).length;
-
-const baseProgress =
-  (completedCount - 1) / (totalSteps - 1) * 100;
-
-const extra = completedCount < totalSteps ? 10 : 0;
-
-const progressPercent = Math.min(baseProgress + extra, 100);
-
+  const totalSteps = orderDetails.timeline.length;
+  const completedCount = orderDetails.timeline.filter(s => s.completed).length;
+  const baseProgress = (completedCount - 1) / (totalSteps - 1) * 100;
+  const extra = completedCount < totalSteps ? 10 : 0;
+  const progressPercent = Math.min(baseProgress + extra, 100);
 
   return (
-    <div className="min-h-screen bg-white scrollbar-hidden">
-   
+    <div 
+      className="min-h-screen bg-white w-full"
+      style={{
+        // Estilos inline para asegurar ocultación de scrollbars
+        overflow: 'auto',
+        scrollbarWidth: 'none',
+        msOverflowStyle: 'none',
+        margin: 0,
+        padding: 0,
+        width: '100%',
+        maxWidth: '100vw',
+        position: 'relative',
+      }}
+    >
+      {/* Estilos adicionales específicos para este componente */}
+      <style jsx global>{`
+        /* Asegura que este componente oculte scrollbars */
+        .scrollbar-hidden {
+          overflow: auto !important;
+          scrollbar-width: none !important;
+          -ms-overflow-style: none !important;
+        }
+        
+        .scrollbar-hidden::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        
+        /* Centra el contenido horizontalmente */
+        .center-content {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 100%;
+        }
+      `}</style>
 
-      <main className="container mx-auto px-6 py-16">
+    
+      
+      <main 
+        className="main-content px-6 py-16"
+        style={{
+          maxWidth: '800px',
+          width: '100%',
+          margin: '0 auto',
+          paddingLeft: '1.5rem',
+          paddingRight: '1.5rem',
+        }}
+      >
         {currentView === "search" && (
-          <div className="text-center mt-20">
-            <h2 className="text-3xl font-serif text-[#6B4E2E] mb-10">
+          <div className="text-center mt-20 center-content">
+            <h2 className="text-3xl font-serif text-[#6B4E2E] mb-10 max-w-xl mx-auto">
               CONSULTA EL ESTADO DE TU SERVICIO
             </h2>
 
-            <form onSubmit={handleSearch} className="max-w-xl mx-auto">
+            <form onSubmit={handleSearch} className="max-w-xl w-full mx-auto">
               <div className="relative">
                 <input
                   type="text"
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   placeholder="Número de orden"
-                  className="w-full px-6 py-4 border border-gray-200  text-center text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#ff8c00]"
+                  className="w-full px-6 py-4 border border-gray-200 text-center text-gray-500 focus:outline-none focus:ring-1 focus:ring-[#ff8c00]"
                 />
 
                 <button
                   type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-[rgb(255,140,0)] p-3 transition-colors duration-500  hover:bg-[#945200] text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-[rgb(255,140,0)] p-3 transition-colors duration-500 hover:bg-[#945200] text-white"
                 >
                   Buscar
                 </button>
@@ -99,19 +238,17 @@ const progressPercent = Math.min(baseProgress + extra, 100);
                   Órdenes de prueba disponibles:
                 </p>
 
-                <div className="flex justify-center gap-4">
-                  {["UJ-2026-001", "UJ-2026-002", "UJ-2026-003"].map(
-                    (order) => (
-                      <button
-                        key={order}
-                        type="button"
-                        onClick={() => setOrderNumber(order)}
-                        className="px-5 py-2 bg-gray-100 rounded-lg text-[#6B4E2E] transition-colors duration-500 hover:bg-gray-200"
-                      >
-                        {order}
-                      </button>
-                    ),
-                  )}
+                <div className="flex justify-center gap-4 flex-wrap">
+                  {["UJ-2026-001", "UJ-2026-002", "UJ-2026-003"].map((order) => (
+                    <button
+                      key={order}
+                      type="button"
+                      onClick={() => setOrderNumber(order)}
+                      className="px-5 py-2 bg-gray-100 rounded-lg text-[#6B4E2E] transition-colors duration-500 hover:bg-gray-200"
+                    >
+                      {order}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -123,13 +260,13 @@ const progressPercent = Math.min(baseProgress + extra, 100);
         )}
 
         {currentView === "details" && (
-          <div>
-            <div className="text-center mt-12">
+          <div className="center-content">
+            <div className="text-center mt-12 w-full">
               <p className="text-sm text-[#B08968] mb-2">
                 ORDEN: {orderDetails.orderNumber}
               </p>
 
-              <h1 className="text-2xl font-extrabold  text-[#6B4E2E]  mb-2">
+              <h1 className="text-2xl font-extrabold text-[#6B4E2E] mb-2">
                 DIAGNÓSTICO
               </h1>
 
@@ -138,62 +275,53 @@ const progressPercent = Math.min(baseProgress + extra, 100);
               </p>
             </div>
 
-           <div className="mt-16 max-w-2xl mx-auto">
-  <div className="relative flex items-center justify-between">
+            <div className="mt-16 w-full max-w-2xl mx-auto">
+              <div className="relative flex items-center justify-between">
+                <div className="absolute top-1/2 left-0 w-full h-[4px] bg-gray-200 -translate-y-1/2 z-0" />
+                
+                <div
+                  className="absolute top-1/2 left-0 h-[4px] bg-[#ff8c00] -translate-y-1/2 transition-all duration-500 z-0"
+                  style={{ width: `${progressPercent}%` }}
+                />
 
+                {orderDetails.timeline.map((step, index) => (
+                  <div
+                    key={index}
+                    className="relative z-10 flex items-center justify-center rounded-full bg-[#EF922E] w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14"
+                  >
+                    <img
+                      src={step.icono}
+                      alt={step.status}
+                      className="w-5 md:w-6 lg:w-7 object-contain"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
 
-    <div className="absolute top-1/2 left-0 w-full h-[4px] bg-gray-200 -translate-y-1/2 z-0" />
-
-   
-    <div
-      className="absolute top-1/2 left-0 h-[4px] bg-[#ff8c00] -translate-y-1/2 transition-all duration-500 z-0"
-      style={{ width: `${progressPercent}%` }}
-    />
-
- 
-    {orderDetails.timeline.map((step, index) => (
-      <div
-        key={index}
-        className="relative z-10 flex items-center justify-center
-          rounded-full bg-[#EF922E]
-          w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14
-        "
-      >
-        <img
-          src={step.icono}
-          alt={step.status}
-          className="w-5 md:w-6 lg:w-7 object-contain"
-        />
-      </div>
-    ))}
-
-  </div>
-</div>
-
-
-            <div className="flex justify-center gap-6 mt-16">
-              <button className="px-8 py-3 border border-[#EF922E] transition-colors duration-500 text-[#EF922E]  hover:bg-[#EF922E] hover:text-white">
+            <div className="flex justify-center gap-6 mt-16 flex-wrap">
+              <button className="px-8 py-3 border border-[#EF922E] transition-colors duration-500 text-[#EF922E] hover:bg-[#EF922E] hover:text-white whitespace-nowrap">
                 CONTACTA UN ASESOR
               </button>
 
-              <button className="px-8 py-3 bg-[#EF922E] text-white transition-colors duration-500  hover:bg-white hover:text-[#EF922E] border border-[#EF922E]">
+              <button className="px-8 py-3 bg-[#EF922E] text-white transition-colors duration-500 hover:bg-white hover:text-[#EF922E] border border-[#EF922E] whitespace-nowrap">
                 AGENDA UNA CITA
               </button>
             </div>
 
-            <div className="bg-[#F9F9F9] p-10 mt-16 max-w-2xl mx-auto shadow-md">
+            <div className="bg-[#F9F9F9] p-10 mt-16 w-full max-w-2xl mx-auto shadow-md">
               <h2 className="text-xl text-center text-[#6B4E2E] mb-8 font-medium">
                 DETALLES DE LA PIEZA
               </h2>
 
-              <div className="grid grid-cols-2 gap-y-6 gap-x-10 text-sm text-[#6B4E2E] text-center mb-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10 text-sm text-[#6B4E2E] text-center mb-10">
                 <p>
                   <strong>TIPO: </strong>
                   {orderDetails.pieceDetails.type}
                 </p>
 
                 <p>
-                  <strong>FECHA DE RECEPCION: </strong>
+                  <strong>FECHA DE RECEPCIÓN: </strong>
                   {orderDetails.receivedDate}
                 </p>
 
@@ -223,10 +351,10 @@ const progressPercent = Math.min(baseProgress + extra, 100);
               </div>
             </div>
 
-            <div className="flex justify-center mt-10">
+            <div className="flex justify-center mt-10 w-full">
               <button
                 onClick={handleNewSearch}
-                className="px-6 py-2 border border-[#EF922E] text-[#EF922E] transition-colors duration-500  hover:bg-[#EF922E] hover:text-white"
+                className="px-6 py-2 border border-[#EF922E] text-[#EF922E] transition-colors duration-500 hover:bg-[#EF922E] hover:text-white"
               >
                 REALIZAR NUEVA BÚSQUEDA
               </button>
