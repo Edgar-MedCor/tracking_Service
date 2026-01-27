@@ -1,4 +1,3 @@
-// src/App.jsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import AdminLogin from './pages/admin/AdminLogin';
 import Dashboard from './pages/admin/Dashboard';
@@ -10,15 +9,15 @@ import './utils/sweetalert.css';
 
 export default function App() {
   return (
-    <Router basename={import.meta.env.BASE_URL}>
+    <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+         <Route path="/" element={<Home />} />
         <Route path="/login" element={<AdminLogin />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin/orders" element={<OrdersList />} />
         <Route path="/admin/new-order" element={<NewOrder />} />
         <Route path="/admin/orders/:id" element={<OrderDetail />} />
-        <Route path="*" element={<div>Página no encontrada</div>} />
+       
       </Routes>
     </Router>
   );
