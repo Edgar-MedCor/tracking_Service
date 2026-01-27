@@ -69,7 +69,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
         {currentView === "search" && (
           <div className="text-center mt-20">
             <h2 className="text-3xl font-serif text-[#6B4E2E] mb-10">
-              Consulta el estado de tu servicio
+              CONSULTA EL ESTADO DE TU SERVICIO
             </h2>
 
             <form onSubmit={handleSearch} className="max-w-xl mx-auto">
@@ -84,7 +84,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
 
                 <button
                   type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-[rgb(255,140,0)] p-3 hover:bg-[#945200] text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-[rgb(255,140,0)] p-3 transition-colors duration-500  hover:bg-[#945200] text-white"
                 >
                   Buscar
                 </button>
@@ -106,7 +106,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
                         key={order}
                         type="button"
                         onClick={() => setOrderNumber(order)}
-                        className="px-5 py-2 bg-gray-100 rounded-lg text-[#6B4E2E] hover:bg-gray-200"
+                        className="px-5 py-2 bg-gray-100 rounded-lg text-[#6B4E2E] transition-colors duration-500 hover:bg-gray-200"
                       >
                         {order}
                       </button>
@@ -155,7 +155,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
       <div
         key={index}
         className="relative z-10 flex items-center justify-center
-          rounded-full bg-[#ff8c00]
+          rounded-full bg-[#EF922E]
           w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14
         "
       >
@@ -172,11 +172,11 @@ const progressPercent = Math.min(baseProgress + extra, 100);
 
 
             <div className="flex justify-center gap-6 mt-16">
-              <button className="px-8 py-3 border border-[#F5B971] text-[#ff8c00]  hover:bg-[#ffd096]">
+              <button className="px-8 py-3 border border-[#EF922E] transition-colors duration-500 text-[#EF922E]  hover:bg-[#EF922E] hover:text-white">
                 CONTACTA UN ASESOR
               </button>
 
-              <button className="px-8 py-3 bg-[#ff8c00] text-white  hover:bg-[#ff9100]">
+              <button className="px-8 py-3 bg-[#EF922E] text-white transition-colors duration-500  hover:bg-white hover:text-[#EF922E] border border-[#EF922E]">
                 AGENDA UNA CITA
               </button>
             </div>
@@ -226,7 +226,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
             <div className="flex justify-center mt-10">
               <button
                 onClick={handleNewSearch}
-                className="px-6 py-2 border border-[#F5B971] text-[#ff8c00]  hover:bg-[#ffd096]"
+                className="px-6 py-2 border border-[#EF922E] text-[#EF922E] transition-colors duration-500  hover:bg-[#EF922E] hover:text-white"
               >
                 REALIZAR NUEVA BÚSQUEDA
               </button>
