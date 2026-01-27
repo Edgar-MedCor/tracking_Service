@@ -7,18 +7,4 @@ export default defineConfig({
     tailwindcss(),
   ],
   
- // Configuración importante para Vercel
-  base: './',
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
-  },
-  server: {
-    historyApiFallback: true, // Importante para React Router
-  },
-});
+})
