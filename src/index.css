@@ -17,6 +17,16 @@
 }
 
 
+.scrollbar-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none; 
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; 
+}
+
+
 @font-face {
   font-family: "Almarose";
   src: url("/fonts/almarose-regular-1.woff2") format("woff2");

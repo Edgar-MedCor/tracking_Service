@@ -62,7 +62,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
 
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white scrollbar-hidden">
    
 
       <main className="container mx-auto px-6 py-16">
@@ -150,7 +150,7 @@ const progressPercent = Math.min(baseProgress + extra, 100);
       style={{ width: `${progressPercent}%` }}
     />
 
-    {/* círculos */}
+ 
     {orderDetails.timeline.map((step, index) => (
       <div
         key={index}
