@@ -115,7 +115,7 @@ export default function NewOrder() {
     }
     
     
-    if (formData.client_phone && !/^[\d\s\-\+\(\)]{10,20}$/.test(formData.client_phone.replace(/\s/g, ''))) {
+    if (formData.client_phone && !/^[\d\s\-+()]{10,20}$/.test(formData.client_phone.replace(/\s/g, ''))) {
       newErrors.client_phone = 'Teléfono inválido (10-20 dígitos)';
     }
     

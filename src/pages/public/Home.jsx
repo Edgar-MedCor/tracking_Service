@@ -323,10 +323,10 @@ export default function Home() {
             {/* Línea de tiempo */}
             <div className="mt-16 w-full max-w-2xl mx-auto">
               <div className="relative flex items-center justify-between">
-                <div className="absolute top-1/2 left-0 w-full h-[4px] bg-gray-200 -translate-y-1/2 z-0" />
+                <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -translate-y-1/2 z-0" />
 
                 <div
-                  className="absolute top-1/2 left-0 h-[4px] bg-[#ff8c00] -translate-y-1/2 transition-all duration-500 z-0"
+                  className="absolute top-1/2 left-0 h-1 bg-[#ff8c00] -translate-y-1/2 transition-all duration-500 z-0"
                   style={{ width: `${progressPercent}%` }}
                 />
 
@@ -368,9 +368,9 @@ export default function Home() {
                 CONTACTA UN ASESOR
               </button>
 
-              <button className="px-8 py-3 bg-[#EF922E] text-white transition-colors duration-500 hover:bg-white hover:text-[#EF922E] border border-[#EF922E] whitespace-nowrap">
+              {/* <button className="px-8 py-3 bg-[#EF922E] text-white transition-colors duration-500 hover:bg-white hover:text-[#EF922E] border border-[#EF922E] whitespace-nowrap">
                 AGENDA UNA CITA
-              </button>
+              </button> */}
             </div>
 
             <div className="bg-white p-8 mt-12 w-full max-w-3xl mx-auto">
@@ -378,25 +378,25 @@ export default function Home() {
                 DETALLES DE LA PIEZA
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-center">
                 {/* Columna 1 */}
                 <div className="space-y-8">
                   {orderData.device_type && (
                     <div>
-                      <div className="text-sm text-[#B08968] mb-2">TIPO</div>
+                      <div className="text-sm text-[#B08968] mb-2">MARCA</div>
                       <div className="text-[#6B4E2E] text-base">
-                        {orderData.device_type}
+                        {orderData.device_brand}
                       </div>
                     </div>
                   )}
 
                   {orderData.device_brand && (
                     <div>
-                      <div className="text-sm text-[#B08968] mb-2">MARCA</div>
+                      <div className="text-sm text-[#B08968] mb-2">TIPO</div>
                       <div className="text-[#6B4E2E] text-base">
-                        {orderData.device_brand}
-                        {orderData.device_model &&
-                          ` - ${orderData.device_model}`}
+                        {orderData.device_type}
+                       
+                          
                       </div>
                     </div>
                   )}
@@ -414,16 +414,16 @@ export default function Home() {
                 </div>
 
                 {/* Columna 2 */}
-                <div className="space-y-8">
-                  {orderData.client_name && (
+                <div className="space-y-8 text-center">
+                  {orderData.device_model && (
                     <div>
-                      <div className="text-sm text-[#B08968] mb-2">CLIENTE</div>
+                      <div className="text-sm text-[#B08968] mb-2">MODELO</div>
                       <div className="text-[#6B4E2E] text-base">
-                        {orderData.client_name}
+                        {orderData.device_model}
                       </div>
                     </div>
                   )}
-
+                  
                   {orderData.received_date && (
                     <div>
                       <div className="text-sm text-[#B08968] mb-2">

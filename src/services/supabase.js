@@ -1,7 +1,7 @@
-// services/supabase.js
+
 import { createClient } from "@supabase/supabase-js";
 
-// Usar el nombre correcto de la variable
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
