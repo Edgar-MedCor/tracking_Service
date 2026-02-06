@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { showConfirmAlert } from "../../utils/alerts";
 import { supabase } from "../../services/supabase";
+import { useEffect, useState } from "react";
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
@@ -8,7 +9,7 @@ export default function AdminLayout({ children }) {
   const handleLogout = async () => {
     const result = await showConfirmAlert(
       "Cerrar Sesión",
-      "¿Está seguro que desea cerrar la sesión?"
+      "¿Está seguro que desea cerrar la sesión?",
     );
 
     if (!result.isConfirmed) return;
@@ -22,6 +23,15 @@ export default function AdminLayout({ children }) {
 
     navigate("/");
   };
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const getUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      setUser(data.user);
+    };
+
+    getUser();
+  }, []);
 
   return (
     <div className="min-h-screen flex bg-linear-to-br from-[#f9f6f0] to-[#f5f1e8]">
@@ -129,8 +139,9 @@ export default function AdminLayout({ children }) {
               </div>
               <div>
                 <p className="text-sm font-medium text-[#6B4E2E]">
-                  Administrador
+                  {user?.user_metadata?.name || user?.email || "Usuario"}
                 </p>
+
                 <p className="text-xs text-[#8B7355] font-light">Taller</p>
               </div>
             </div>
@@ -166,4 +177,3 @@ export default function AdminLayout({ children }) {
     </div>
   );
 }
-

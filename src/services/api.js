@@ -8,8 +8,20 @@ const supabase = createClient(
 const API = import.meta.env.VITE_API_URL;
 
 async function request(url, options = {}) {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    throw new Error("Error getting session");
+  }
+
+  const token = data?.session?.access_token;
+
+if (!token) {
+  await supabase.auth.signOut();
+  window.location.href = "/";
+  return;
+}
+
 
   const res = await fetch(`${API}${url}`, {
     headers: {
@@ -27,6 +39,7 @@ async function request(url, options = {}) {
 
   return res.json();
 }
+
 
 export const api = {
   getOrders: () => request("/orders"),
@@ -56,6 +69,25 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ status_id }),
     }),
+
+
+    updateOrder: (id, data) =>
+  request(`/orders/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+
+updatePriority: (id, priority_id) =>
+  request(`/orders/${id}/priority`, {
+    method: "PATCH",
+    body: JSON.stringify({ priority_id }),
+  }),
+
+deleteNote: (orderId, noteId) =>
+  request(`/notes/${orderId}/notes/${noteId}`, {
+    method: "DELETE",
+  }),
+
 };
 
 
