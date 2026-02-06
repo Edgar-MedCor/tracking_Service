@@ -274,7 +274,7 @@ export default function Home() {
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   placeholder="Número de orden"
-                  className="w-full px-6 py-4 border border-gray-200 text-center text-gray-500 focus:outline-none -ml-1.5 focus:ring-1 focus:ring-[#ff8c00]"
+                  className="w-full px-6 py-4 border border-gray-200 text-center text-gray-500 focus:outline-none -ml-[7px] focus:ring-1 focus:ring-[#ff8c00]"
                   disabled={loading}
                 />
 
