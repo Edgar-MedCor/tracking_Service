@@ -5,18 +5,54 @@ import OrdersList from "./pages/admin/OrdersList";
 import NewOrder from "./pages/admin/NewOrder";
 import OrderDetail from "./pages/admin/OrderDetail";
 import Home from "./pages/public/Home";
+import ProtectedRoute from "./ProtectedRoute";
 import "./utils/sweetalert.css";
 
 export default function App() {
   return (
     <Router>
       <Routes>
+
+        
         <Route path="/" element={<Home />} />
-        <Route path="/Dashboard" element={<Dashboard />} />
         <Route path="/login" element={<AdminLogin />} />
-        <Route path="/admin/orders" element={<OrdersList />} />
-        <Route path="/admin/new-order" element={<NewOrder />} />
-        <Route path="/admin/orders/:id" element={<OrderDetail />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/orders"
+          element={
+            <ProtectedRoute>
+              <OrdersList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/new-order"
+          element={
+            <ProtectedRoute>
+              <NewOrder />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/orders/:id"
+          element={
+            <ProtectedRoute>
+              <OrderDetail />
+            </ProtectedRoute>
+          }
+        />
+
       </Routes>
     </Router>
   );

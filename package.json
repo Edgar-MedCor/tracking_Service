@@ -8,9 +8,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "vercel-build": "vite build" 
+    "vercel-build": "vite build"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.95.0",
     "@tailwindcss/vite": "^4.1.18",
     "lucide-react": "^0.562.0",
     "react": "^19.2.0",

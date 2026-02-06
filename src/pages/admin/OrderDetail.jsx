@@ -1,91 +1,146 @@
-// OrderDetail.jsx (corregido)
 import AdminLayout from "./AdminLayout";
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from "../../utils/alerts";
+import { api } from '../../services/api';
 
 export default function OrderDetail() {
-
+  const { id } = useParams();
+  const navigate = useNavigate();
   
-  const [order, setOrder] = useState({
-    id: "UJ-2024-015",
-    client: "María Rodríguez",
-    email: "maria@email.com",
-    phone: "+52 123 456 7890",
-    status: "En Taller",
-    date: "15/01/2024",
-    priority: "Alta",
-    
-  
-    pieceType: "Reloj de pulsera",
-    brand: "Rolex",
-    model: "Datejust 41",
-    serialNumber: "R-78901234",
-    receptionDate: "12/01/2024",
-    estimatedDelivery: "20/01/2024",
-    
-    
-    serviceDescription: "Cambio de batería y limpieza general del brazalete.",
-    
-   
-    diagnosisNote: "Diagnóstico completado - Requiere cambio de batería",
-    waitingForPartsNote: "Esperando repuestos necesarios",
-    inWorkshopNote: "En proceso de reparación",
-    qualityNote: "Control de calidad final",
-    readyNote: "Listo para retiro",
-    
-   
-    internalLog: [
-      { user: "Sistema", date: "12/01/2024 10:00", note: "Servicio solicitado: Cambio de batería y limpieza general del brazalete." },
-      { user: "Juan Pérez", date: "13/01/2024 15:30", note: "Cliente solicita limpieza adicional del brazalete." },
-      { user: "Ana López", date: "14/01/2024 11:15", note: "Pieza requiere batería especial - en espera de proveedor." }
-    ],
-    
-  
-    newNote: ""
+  const [order, setOrder] = useState(null);
+  const [notes, setNotes] = useState([]);
+  const [masterData, setMasterData] = useState({
+    priorities: [],
+    statuses: []
   });
-
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
+  const [newNote, setNewNote] = useState('');
 
-  
-  const statusOptions = ["Recibido", "Diagnóstico", "Espera de Piezas", "En Taller", "Calidad", "Listo"];
-  
   const statusColors = {
-    "Recibido": "bg-gray-100 text-gray-800 ",
-    "Diagnóstico": "bg-blue-50 text-blue-700",
-    "Espera de Piezas": "bg-yellow-50 text-yellow-700",
-    "En Taller": "bg-orange-50 text-orange-700",
-    "Calidad": "bg-purple-50 text-purple-700",
-    "Listo": "bg-green-50 text-green-700"
+    "En Diagnóstico": "bg-blue-50 text-blue-700",
+    "En espera de aprobación por cliente": "bg-yellow-50 text-yellow-700",
+    "En servicio": "bg-orange-50 text-orange-700",
+    "Pieza lista para entrega": "bg-purple-50 text-purple-700",
   };
 
- 
-  const handleEditClick = () => {
-    setIsEditing(true);
-    setEditData({ ...order });
+  const priorityColors = {
+    "Alta": "bg-red-50 text-red-600 border border-red-200",
+    "Media": "bg-yellow-50 text-yellow-600 border border-yellow-200",
+    "Baja": "bg-green-50 text-green-600 border border-green-200",
   };
- 
-  const handleSaveChanges = async () => {
+
+  // Cargar datos iniciales
+  useEffect(() => {
+    if (id) {
+      loadOrderData();
+      loadMasterData();
+    }
+  }, [id]);
+
+  const loadOrderData = async () => {
     try {
-      setOrder(editData);
-      setIsEditing(false);
+      setLoading(true);
+      const response = await api.getOrder(id);
       
-      await showSuccessAlert(
-        'Cambios Guardados',
-        'La orden se ha actualizado correctamente.'
-      );
-    } catch  {
-      await showErrorAlert('Error', 'No se pudieron guardar los cambios');
+      if (response.success) {
+        setOrder(response.order);
+        setNotes(response.bitacora?.notas || []);
+        
+        // Preparar datos para edición
+        setEditData({
+          client_name: response.order.client_name,
+          client_email: response.order.client_email,
+          client_phone: response.order.client_phone,
+          device_type: response.order.device_type,
+          device_brand: response.order.device_brand,
+          device_model: response.order.device_model,
+          serial_number: response.order.serial_number,
+          estimated_delivery: response.order.estimated_delivery,
+          priority_id: response.order.priority_id
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando orden:', error);
+      showErrorAlert('Error', 'No se pudo cargar la orden');
+      navigate('/admin/orders');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Cancelar edición
-  const handleCancelEdit = () => {
-    setIsEditing(false);
+  const loadMasterData = async () => {
+    try {
+      const response = await api.getMasterData?.() || 
+        await fetch(`${import.meta.env.VITE_API_URL}/orders/data/masters`).then(res => res.json());
+      
+      if (response.success) {
+        setMasterData({
+          priorities: response.priorities || [],
+          statuses: response.statuses || []
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando datos maestros:', error);
+    }
   };
 
-  // Manejar cambios en formulario de edición
+  // Manejar edición
+  const handleEditClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editData)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setOrder(prev => ({ 
+          ...prev, 
+          ...editData,
+          priority_name: masterData.priorities.find(p => p.id === editData.priority_id)?.name || editData.priority_id
+        }));
+        setIsEditing(false);
+        await showSuccessAlert('¡Cambios Guardados!', 'La orden se ha actualizado correctamente.');
+        
+    
+        loadOrderData();
+      } else {
+        throw new Error(data.error || 'Error al guardar');
+      }
+    } catch (error) {
+      console.error('Error guardando cambios:', error);
+      await showErrorAlert('Error', error.message || 'No se pudieron guardar los cambios');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    if (order) {
+      setEditData({
+        client_name: order.client_name,
+        client_email: order.client_email,
+        client_phone: order.client_phone,
+        device_type: order.device_type,
+        device_brand: order.device_brand,
+        device_model: order.device_model,
+        serial_number: order.serial_number,
+        estimated_delivery: order.estimated_delivery,
+        priority_id: order.priority_id
+      });
+    }
+  };
+
   const handleEditChange = (field, value) => {
     setEditData(prev => ({
       ...prev,
@@ -94,70 +149,246 @@ export default function OrderDetail() {
   };
 
   // Cambiar estado
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = async (newStatusId) => {
+    const newStatus = masterData.statuses.find(s => s.id === parseInt(newStatusId));
+    
     const result = await showConfirmAlert(
       'Cambiar Estado',
-      `¿Cambiar estado de "${order.status}" a "${newStatus}"?`
+      `¿Cambiar estado de "${order?.status_name}" a "${newStatus?.name}"?`
     );
     
-    if (result.isConfirmed) {
-      const updatedOrder = {
-        ...order,
-        status: newStatus
-      };
-      setOrder(updatedOrder);
-      
-      await showSuccessAlert(
-        'Estado Actualizado',
-        `El estado ha sido cambiado a "${newStatus}"`
-      );
+    if (result.isConfirmed && newStatus) {
+      try {
+        const response = await api.updateStatus(id, newStatus.id);
+        
+        if (response.success) {
+          setOrder(prev => ({ 
+            ...prev, 
+            status_id: newStatus.id,
+            status_name: newStatus.name 
+          }));
+          
+          await showSuccessAlert(
+            '¡Estado Actualizado!',
+            `El estado ha sido cambiado a "${newStatus.name}"`
+          );
+        }
+      } catch (error) {
+        console.error('Error actualizando estado:', error);
+        await showErrorAlert('Error', 'No se pudo actualizar el estado');
+      }
     }
   };
 
-  // Agregar nota a la bitácora
+  // Cambiar prioridad
+  const handlePriorityChange = async (newPriorityId) => {
+    const newPriority = masterData.priorities.find(p => p.id === parseInt(newPriorityId));
+    
+    if (!newPriority) {
+      await showErrorAlert('Error', 'Prioridad inválida seleccionada');
+      return;
+    }
+
+    const result = await showConfirmAlert(
+      'Cambiar Prioridad',
+      `¿Cambiar prioridad de "${order?.priority_name || order?.priority_id}" a "${newPriority.name}"?`
+    );
+    
+    if (result.isConfirmed) {
+      try {
+        
+        let response;
+        try {
+          response = await fetch(`${import.meta.env.VITE_API_URL}/orders/${id}/priority`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ priority_id: newPriority.id })
+          });
+          
+          const data = await response.json();
+          
+          if (data.success) {
+            setOrder(prev => ({ 
+              ...prev, 
+              priority_id: newPriority.id,
+              priority_name: newPriority.name 
+            }));
+            
+            await showSuccessAlert(
+              '¡Prioridad Actualizada!',
+              `La prioridad ha sido cambiada a "${newPriority.name}"`
+            );
+            return;
+          }
+        } catch (priorityEndpointError) {
+          console.log('Endpoint específico de prioridad no disponible, usando PUT general...', priorityEndpointError);
+        }
+        
+        // Si no existe el endpoint específico, usar PUT general
+        const putResponse = await fetch(`${import.meta.env.VITE_API_URL}/orders/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ priority_id: newPriority.id })
+        });
+        
+        const putData = await putResponse.json();
+        
+        if (putData.success) {
+          setOrder(prev => ({ 
+            ...prev, 
+            priority_id: newPriority.id,
+            priority_name: newPriority.name 
+          }));
+          
+          await showSuccessAlert(
+            '¡Prioridad Actualizada!',
+            `La prioridad ha sido cambiada a "${newPriority.name}"`
+          );
+        } else {
+          throw new Error(putData.error || 'Error al actualizar');
+        }
+      } catch (error) {
+        console.error('Error actualizando prioridad:', error);
+        await showErrorAlert('Error', error.message || 'No se pudo actualizar la prioridad');
+      }
+    }
+  };
+
+  // Agregar nota
   const handleAddNote = async () => {
-    if (!order.newNote.trim()) {
+    if (!newNote.trim()) {
       await showErrorAlert('Nota vacía', 'Por favor ingrese una nota');
       return;
     }
 
-    const newNoteEntry = {
-      user: "Administrador",
-      date: new Date().toLocaleDateString('es-MX') + " " + 
-            new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
-      note: order.newNote
-    };
-    
-    const updatedOrder = {
-      ...order,
-      internalLog: [newNoteEntry, ...order.internalLog],
-      newNote: ""
-    };
-    
-    setOrder(updatedOrder);
-    
-    await showSuccessAlert('Nota Agregada', 'La nota se ha agregado correctamente');
+    try {
+      const response = await api.addNote(id, newNote);
+      
+      if (response.success) {
+        const newNoteObj = {
+          id: response.note.id,
+          description: response.note.description,
+          fecha_formateada: new Date().toLocaleDateString('es-MX') + ' ' + 
+                           new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }),
+          created_at: new Date().toISOString()
+        };
+        
+        setNotes(prev => [newNoteObj, ...prev]);
+        setNewNote('');
+        
+        await showSuccessAlert('¡Nota Agregada!', 'La nota se ha agregado correctamente');
+      }
+    } catch (error) {
+      console.error('Error agregando nota:', error);
+      await showErrorAlert('Error', 'No se pudo agregar la nota');
+    }
   };
 
   // Eliminar nota
-  const handleDeleteNote = async (index) => {
+  const handleDeleteNote = async (noteId) => {
     const result = await showConfirmAlert(
       'Eliminar Nota',
       '¿Está seguro que desea eliminar esta nota?'
     );
     
     if (result.isConfirmed) {
-      const updatedLog = [...order.internalLog];
-      updatedLog.splice(index, 1);
-      
-      setOrder({
-        ...order,
-        internalLog: updatedLog
-      });
-      
-      await showSuccessAlert('Nota Eliminada', 'La nota ha sido eliminada');
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/notes/${id}/notes/${noteId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          setNotes(prev => prev.filter(note => note.id !== noteId));
+          await showSuccessAlert('¡Nota Eliminada!', 'La nota ha sido eliminada correctamente');
+        } else {
+          throw new Error(data.error || 'Error al eliminar');
+        }
+      } catch (error) {
+        console.error('Error eliminando nota:', error);
+        await showErrorAlert('Error', error.message || 'No se pudo eliminar la nota');
+      }
     }
   };
+
+  // Eliminar orden
+  const handleDeleteOrder = async () => {
+    const result = await showConfirmAlert(
+      'Eliminar Orden',
+      `¿Está seguro que desea eliminar permanentemente la orden ${order?.order_number}? Esta acción no se puede deshacer.`,
+      'Eliminar',
+      'Cancelar'
+    );
+    
+    if (result.isConfirmed) {
+      try {
+        const response = await api.deleteOrder(id);
+        
+        if (response.success) {
+          await showSuccessAlert(
+            '¡Orden Eliminada!',
+            `La orden ${order?.order_number} ha sido eliminada correctamente.`
+          );
+          navigate('/admin/orders');
+        }
+      } catch (error) {
+        console.error('Error eliminando orden:', error);
+        await showErrorAlert('Error', error.message || 'No se pudo eliminar la orden');
+      }
+    }
+  };
+
+  // Formatear fecha
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-MX');
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Cargando
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#ff8c00] mx-auto"></div>
+            <p className="text-[#6B4E2E] mt-4">Cargando orden...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!order) {
+    return (
+      <AdminLayout>
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center py-12">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-[#e8e2d9] mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p className="text-[#B08968] font-light">Orden no encontrada</p>
+            <Link
+              to="/admin/orders"
+              className="mt-4 inline-block text-sm text-[#ff8c00] hover:text-[#e67e00] transition-colors duration-200"
+            >
+              ← Volver a órdenes
+            </Link>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -175,11 +406,13 @@ export default function OrderDetail() {
                   </svg>
                 </Link>
                 <h1 className="text-2xl font-light tracking-wider text-[#6B4E2E]">
-                  Orden #{order.id}
+                  Orden #{order.order_number}
                 </h1>
               </div>
               <p className="text-sm text-[#B08968] font-light">
-                Cliente: {order.client} • Fecha: {order.date} • Prioridad: {order.priority}
+                Cliente: {order.client_name} • 
+                Fecha: {formatDate(order.received_date)} • 
+                Prioridad: {order.priority_name || order.priority_id}
               </p>
             </div>
             <div className="flex space-x-3">
@@ -187,147 +420,146 @@ export default function OrderDetail() {
                 <>
                   <button
                     onClick={handleCancelEdit}
-                    className="px-4 py-2 border border-[#e8e2d9]  text-sm font-light text-[#6B4E2E] hover:bg-[#faf8f5] transition-colors duration-200"
+                    className="px-4 py-2 border border-[#e8e2d9] text-sm font-light text-[#6B4E2E] hover:bg-[#faf8f5] transition-colors duration-200"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={handleSaveChanges}
-                    className="px-4 py-2 bg-[#ff8c00] text-white  font-light hover:bg-[#e67e00] transition-colors duration-200"
+                    className="px-4 py-2 bg-[#ff8c00] text-white font-light hover:bg-[#e67e00] transition-colors duration-200"
                   >
                     Guardar
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={handleEditClick}
-                  className="px-4 py-2 bg-[#ff8c00] text-white  font-light hover:bg-[#e67e00] transition-colors duration-200"
-                >
-                  Editar Orden
-                </button>
+                <>
+                  <button
+                    onClick={handleDeleteOrder}
+                    className="px-4 py-2 border border-red-200 text-sm font-light text-red-600 hover:bg-red-50 transition-colors duration-200"
+                  >
+                    Eliminar
+                  </button>
+                  <button
+                    onClick={handleEditClick}
+                    className="px-4 py-2 bg-[#ff8c00] text-white font-light hover:bg-[#e67e00] transition-colors duration-200"
+                  >
+                    Editar Orden
+                  </button>
+                </>
               )}
             </div>
           </div>
         </div>
 
-        {/* Grid principal - REORGANIZADO */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Columna izquierda - Estado y progreso */}
+          {/* Columna izquierda - Estado y cliente */}
           <div className="space-y-6">
             
-            {/* Estado actual y selector */}
-            <div className="bg-white p-6  border border-[#e8e2d9]">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="font-light text-lg text-[#6B4E2E]">Estado Actual</h2>
-                <div className="relative">
-                  <select 
-                    value={order.status}
-                    onChange={(e) => handleStatusChange(e.target.value)}
-                    className="px-4 py-2 border border-[#e8e2d9]  text-sm font-light text-[#6B4E2E] focus:outline-none appearance-none pr-8"
-                  >
-                    {statusOptions.map(status => (
-                      <option key={status} value={status}>{status}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#B08968]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+            {/* Card de Estado y Prioridad combinada */}
+            <div className="bg-white p-6 border border-[#e8e2d9]">
+              <h2 className="font-light text-lg text-[#6B4E2E] mb-4">Estado y Prioridad</h2>
+              
+              {/* Estado */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-[#B08968] font-light">Estado Actual</p>
+                  <div className="relative w-48">
+                    <select 
+                      value={order.status_id}
+                      onChange={(e) => handleStatusChange(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#e8e2d9] text-sm font-light text-[#6B4E2E] focus:outline-none appearance-none pr-8"
+                    >
+                      {masterData.statuses.map(status => (
+                        <option key={status.id} value={status.id}>
+                          {status.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#B08968]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="mb-6">
-                <span className={`inline-flex items-center px-3 py-1  text-sm font-light ${statusColors[order.status]}`}>
-                  {order.status}
+                <span className={`inline-flex items-center px-3 py-1 text-sm font-light ${statusColors[order.status_name] || 'bg-gray-100 text-gray-800'}`}>
+                  {order.status_name || 'Sin estado'}
                 </span>
               </div>
 
-             
-              <div className="space-y-4">
-               
-                <div className="flex items-start space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${order.status === "Diagnóstico" ? 'bg-[#ff8c00]' : 'bg-gray-200'}`}>
-                    {order.status === "Diagnóstico" && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              {/* Prioridad */}
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-sm text-[#B08968] font-light">Prioridad</p>
+                  <div className="relative w-48">
+                    <select 
+                      value={order.priority_id}
+                      onChange={(e) => handlePriorityChange(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#e8e2d9] text-sm font-light text-[#6B4E2E] focus:outline-none appearance-none pr-8"
+                    >
+                      {masterData.priorities.map(priority => (
+                        <option key={priority.id} value={priority.id}>
+                          {priority.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#B08968]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-[#6B4E2E] font-light">Diagnóstico</p>
-                    <p className="text-xs text-[#B08968]">Evaluación técnica en curso</p>
-                    {order.status === "Diagnóstico" && order.diagnosisNote && (
-                      <p className="text-xs text-[#ff8c00] mt-1">{order.diagnosisNote}</p>
-                    )}
+                    </div>
                   </div>
                 </div>
+                <span className={`inline-block px-3 py-1 text-xs font-medium ${
+                  priorityColors[order.priority_name] || 'bg-gray-50 text-gray-600 border border-gray-200'
+                }`}>
+                  {order.priority_name || order.priority_id || 'N/A'}
+                </span>
+              </div>
 
-              
-                <div className="flex items-start space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${order.status === "Espera de Piezas" ? 'bg-[#ff8c00]' : 'bg-gray-200'}`}>
-                    {order.status === "Espera de Piezas" && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-[#6B4E2E] font-light">Espera de Piezas</p>
-                    <p className="text-xs text-[#B08968]">{order.waitingForPartsNote}</p>
-                  </div>
-                </div>
-
-            
-                <div className="flex items-start space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${order.status === "En Taller" ? 'bg-[#ff8c00]' : 'bg-gray-200'}`}>
-                    {order.status === "En Taller" && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-[#6B4E2E] font-light">En Taller</p>
-                    <p className="text-xs text-[#B08968]">{order.inWorkshopNote}</p>
-                  </div>
-                </div>
-
-             
-                <div className="flex items-start space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${order.status === "Calidad" ? 'bg-[#ff8c00]' : 'bg-gray-200'}`}>
-                    {order.status === "Calidad" && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-[#6B4E2E] font-light">Calidad</p>
-                    <p className="text-xs text-[#B08968]">{order.qualityNote}</p>
-                  </div>
-                </div>
-
-              
-                <div className="flex items-start space-x-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center ${order.status === "Listo" ? 'bg-[#ff8c00]' : 'bg-gray-200'}`}>
-                    {order.status === "Listo" && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-[#6B4E2E] font-light">Listo</p>
-                    <p className="text-xs text-[#B08968]">{order.readyNote}</p>
-                  </div>
+              {/* Línea de tiempo de estados */}
+              <div className="pt-6 border-t border-[#e8e2d9]">
+                <h3 className="text-sm font-medium text-[#6B4E2E] mb-4">Progreso del Servicio</h3>
+                <div className="space-y-4">
+                  {masterData.statuses.map((status,) => (
+                    <div key={status.id} className="flex items-start space-x-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                        order.status_id === status.id ? 'bg-[#ff8c00]' : 
+                        order.status_id > status.id ? 'bg-green-500' : 'bg-gray-200'
+                      }`}>
+                        {order.status_id === status.id && (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        {order.status_id > status.id && (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm font-light ${
+                          order.status_id === status.id ? 'text-[#ff8c00]' : 
+                          order.status_id > status.id ? 'text-green-600' : 'text-[#6B4E2E]'
+                        }`}>
+                          {status.name}
+                        </p>
+                        {order.status_id === status.id && notes[0] && (
+                          <p className="text-xs text-[#ff8c00] mt-1 italic">
+                            {notes[0].description?.substring(0, 50)}...
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-          
-            <div className="bg-white p-6  border border-[#e8e2d9]">
+            {/* Información del cliente */}
+            <div className="bg-white p-6 border border-[#e8e2d9]">
               <h2 className="font-light text-lg text-[#6B4E2E] mb-4">Información del Cliente</h2>
               <div className="space-y-3">
                 <div>
@@ -335,12 +567,12 @@ export default function OrderDetail() {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editData.client}
-                      onChange={(e) => handleEditChange('client', e.target.value)}
+                      value={editData.client_name}
+                      onChange={(e) => handleEditChange('client_name', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.client}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">{order.client_name}</p>
                   )}
                 </div>
                 <div>
@@ -348,12 +580,12 @@ export default function OrderDetail() {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editData.phone}
-                      onChange={(e) => handleEditChange('phone', e.target.value)}
+                      value={editData.client_phone}
+                      onChange={(e) => handleEditChange('client_phone', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.phone}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">{order.client_phone || 'N/A'}</p>
                   )}
                 </div>
                 <div>
@@ -361,27 +593,23 @@ export default function OrderDetail() {
                   {isEditing ? (
                     <input
                       type="email"
-                      value={editData.email}
-                      onChange={(e) => handleEditChange('email', e.target.value)}
+                      value={editData.client_email}
+                      onChange={(e) => handleEditChange('client_email', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.email}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">{order.client_email || 'N/A'}</p>
                   )}
-                </div>
-                <div>
-                  <p className="text-xs text-[#B08968] font-light">Prioridad</p>
-                  <p className="text-sm text-[#6B4E2E] mt-1">{order.priority}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Columna central - Detalles de la pieza y Bitácora */}
+          {/* Columna central - Detalles y bitácora */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Detalles de la pieza */}
-            <div className="bg-white p-6  border border-[#e8e2d9]">
+            <div className="bg-white p-6 border border-[#e8e2d9]">
               <h2 className="font-light text-lg text-[#6B4E2E] mb-4">Detalles de la Pieza</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -389,12 +617,12 @@ export default function OrderDetail() {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editData.pieceType}
-                      onChange={(e) => handleEditChange('pieceType', e.target.value)}
+                      value={editData.device_type}
+                      onChange={(e) => handleEditChange('device_type', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.pieceType}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">{order.device_type}</p>
                   )}
                 </div>
                 <div>
@@ -402,12 +630,12 @@ export default function OrderDetail() {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editData.brand}
-                      onChange={(e) => handleEditChange('brand', e.target.value)}
+                      value={editData.device_brand}
+                      onChange={(e) => handleEditChange('device_brand', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.brand}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">{order.device_brand || 'N/A'}</p>
                   )}
                 </div>
                 <div>
@@ -415,12 +643,12 @@ export default function OrderDetail() {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editData.model}
-                      onChange={(e) => handleEditChange('model', e.target.value)}
+                      value={editData.device_model}
+                      onChange={(e) => handleEditChange('device_model', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.model}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">{order.device_model || 'N/A'}</p>
                   )}
                 </div>
                 <div>
@@ -428,63 +656,56 @@ export default function OrderDetail() {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={editData.serialNumber}
-                      onChange={(e) => handleEditChange('serialNumber', e.target.value)}
+                      value={editData.serial_number}
+                      onChange={(e) => handleEditChange('serial_number', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.serialNumber}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">{order.serial_number || 'N/A'}</p>
                   )}
                 </div>
                 <div>
                   <p className="text-xs text-[#B08968] font-light">Fecha Recepción</p>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={editData.receptionDate}
-                      onChange={(e) => handleEditChange('receptionDate', e.target.value)}
-                      className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
-                    />
-                  ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.receptionDate}</p>
-                  )}
+                  <p className="text-sm text-[#6B4E2E] mt-1">{formatDate(order.received_date)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-[#B08968] font-light">Estimado Entrega</p>
                   {isEditing ? (
                     <input
-                      type="text"
-                      value={editData.estimatedDelivery}
-                      onChange={(e) => handleEditChange('estimatedDelivery', e.target.value)}
+                      type="date"
+                      value={editData.estimated_delivery || ''}
+                      onChange={(e) => handleEditChange('estimated_delivery', e.target.value)}
                       className="w-full px-3 py-2 border border-[#e8e2d9] rounded text-sm mt-1"
                     />
                   ) : (
-                    <p className="text-sm text-[#6B4E2E] mt-1">{order.estimatedDelivery}</p>
+                    <p className="text-sm text-[#6B4E2E] mt-1">
+                      {order.estimated_delivery ? formatDate(order.estimated_delivery) : 'No definido'}
+                    </p>
                   )}
                 </div>
               </div>
             </div>
 
-            {/* Bitácora interna - AHORA EN LA COLUMNA CENTRAL MÁS GRANDE */}
-            <div className="bg-white p-6  border border-[#e8e2d9]">
-              <h2 className="font-light text-lg text-[#6B4E2E] mb-4">Bitácora Interna</h2>
+            {/* Bitácora */}
+            <div className="bg-white p-6 border border-[#e8e2d9]">
+              <h2 className="font-light text-lg text-[#6B4E2E] mb-4">Bitácora ({notes.length} notas)</h2>
               
               {/* Formulario para agregar nota */}
               <div className="mb-6">
                 <div className="flex space-x-4">
                   <div className="flex-1">
                     <textarea
-                      value={order.newNote}
-                      onChange={(e) => setOrder({...order, newNote: e.target.value})}
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
                       placeholder="Agregar nueva nota..."
                       rows="2"
-                      className="w-full px-4 py-3 border border-[#e8e2d9]  text-sm focus:border-[#6B4E2E] focus:outline-none transition-colors duration-200"
+                      className="w-full px-4 py-3 border border-[#e8e2d9] text-sm focus:border-[#6B4E2E] focus:outline-none transition-colors duration-200"
                     />
                   </div>
                   <div>
                     <button
                       onClick={handleAddNote}
-                      className="h-full px-6 bg-[#ff8c00] text-white  font-light hover:bg-[#e67e00] transition-colors duration-200 whitespace-nowrap"
+                      className="h-full px-6 bg-[#ff8c00] text-white font-light hover:bg-[#e67e00] transition-colors duration-200 whitespace-nowrap"
                     >
                       Agregar Nota
                     </button>
@@ -492,22 +713,21 @@ export default function OrderDetail() {
                 </div>
               </div>
               
-            
-              <div className="space-y-4 max-h-100 overflow-y-auto pr-2">
-                {order.internalLog.map((log, index) => (
-                  <div key={index} className="border-l-2 border-[#ff8c00] pl-4 py-3">
+              {/* Lista de notas */}
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                {notes.map((note) => (
+                  <div key={note.id} className="border-l-2 border-[#ff8c00] pl-4 py-3">
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex items-center space-x-3">
-                          <p className="text-sm font-medium text-[#6B4E2E]">{log.user}</p>
-                          <span className="text-xs text-[#B08968] font-light bg-[#faf8f5] px-2 py-1 ">
-                            {log.date}
+                          <span className="text-xs text-[#B08968] font-light bg-[#faf8f5] px-2 py-1">
+                            {note.fecha_formateada || formatDate(note.created_at)}
                           </span>
                         </div>
-                        <p className="text-sm text-[#6B4E2E] font-light mt-2">{log.note}</p>
+                        <p className="text-sm text-[#6B4E2E] font-light mt-2">{note.description}</p>
                       </div>
                       <button
-                        onClick={() => handleDeleteNote(index)}
+                        onClick={() => handleDeleteNote(note.id)}
                         className="text-[#B08968] hover:text-red-600 transition-colors duration-200 p-1"
                         title="Eliminar nota"
                       >
@@ -519,7 +739,7 @@ export default function OrderDetail() {
                   </div>
                 ))}
                 
-                {order.internalLog.length === 0 && (
+                {notes.length === 0 && (
                   <div className="text-center py-8">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-[#e8e2d9] mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
