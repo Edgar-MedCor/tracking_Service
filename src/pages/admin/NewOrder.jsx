@@ -41,10 +41,10 @@ export default function NewOrder() {
   }, []);
 
 
-  const loadMasterData = async () => {
+const loadMasterData = async () => {
     try {
-      const response = await api.getMasterData?.() || 
-        await fetch(`${import.meta.env.VITE_API_URL}/orders/data/masters`).then(res => res.json());
+   
+      const response = await api.getMasterData();
       
       if (response.success) {
         setMasterData({
@@ -52,7 +52,6 @@ export default function NewOrder() {
           statuses: response.statuses
         });
         
-    
         const defaultStatus = response.statuses.find(s => s.name === 'Recibido');
         const defaultPriority = response.priorities.find(p => p.name === 'Media');
         

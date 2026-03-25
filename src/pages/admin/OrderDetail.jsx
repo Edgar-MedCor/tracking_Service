@@ -74,14 +74,10 @@ export default function OrderDetail() {
       setLoading(false);
     }
   };
-
-  const loadMasterData = async () => {
+const loadMasterData = async () => {
     try {
-      const response =
-        (await api.getMasterData?.()) ||
-        (await fetch(
-          `${import.meta.env.VITE_API_URL}/orders/data/masters`,
-        ).then((res) => res.json()));
+
+      const response = await api.getMasterData();
 
       if (response.success) {
         setMasterData({
