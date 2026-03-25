@@ -5,7 +5,7 @@ import { showConfirmAlert, showSuccessAlert, showErrorAlert } from "../../utils/
 import { api } from '../../services/api';
 
 export default function OrdersList() {
-  const [orders, setOrders] = useState([]);
+  const [allOrders, setAllOrders] = useState([]); // fuente de verdad, nunca se pisa
   const [masterData, setMasterData] = useState({
     priorities: [],
     statuses: []
@@ -17,210 +17,76 @@ export default function OrdersList() {
   const [sortBy, setSortBy] = useState('received_date');
   const [sortOrder, setSortOrder] = useState('desc');
 
-  // Cargar datos iniciales
   useEffect(() => {
     loadInitialData();
   }, []);
 
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      
-      // Cargar órdenes y datos maestros en paralelo
-      const [ordersResponse, mastersResponse] = await Promise.all([
-        api.getOrders(),
-        fetch(`${import.meta.env.VITE_API_URL}/orders/data/masters`).then(res => res.json())
-      ]);
+ const loadInitialData = async () => {
+  try {
+    setLoading(true);
 
-      if (ordersResponse.success) {
-        setOrders(ordersResponse.orders || []);
-      }
+    const [ordersResponse, mastersResponse] = await Promise.all([
+      api.getOrders(),
+      api.getMasterData()
+    ]);
 
-      if (mastersResponse.success) {
-        setMasterData({
-          priorities: mastersResponse.priorities || [],
-          statuses: mastersResponse.statuses || []
-        });
-      }
-    } catch (error) {
-      console.error('Error cargando datos:', error);
-      showErrorAlert('Error', 'No se pudieron cargar las órdenes');
-    } finally {
-      setLoading(false);
+    if (ordersResponse.success) {
+      setAllOrders(ordersResponse.orders || []);
     }
-  };
 
-  // Buscar órdenes en tiempo real
-  useEffect(() => {
-    if (searchTerm.trim()) {
-      const searchTimeout = setTimeout(async () => {
-        try {
-          setLoading(true);
-          const response = await api.searchOrders(searchTerm);
-          if (response.success) {
-            setOrders(response.orders || []);
-          }
-        } catch (error) {
-          console.error('Error buscando órdenes:', error);
-        } finally {
-          setLoading(false);
-        }
-      }, 500);
-
-      return () => clearTimeout(searchTimeout);
-    } else {
-      loadInitialData();
+    if (mastersResponse.success) {
+      setMasterData({
+        priorities: mastersResponse.priorities || [],
+        statuses: mastersResponse.statuses || []
+      });
     }
-  }, [searchTerm]);
 
+  } catch (error) {
+    console.error('Error cargando datos:', error);
+    showErrorAlert('Error', 'No se pudieron cargar las órdenes');
+  } finally {
+    setLoading(false);
+  }
+};
 
+  // ─── Todo el filtrado ocurre en cliente, sin llamadas extra a la API ───────
+  let filteredOrders = allOrders.filter(order => {
+    const searchLower = searchTerm.trim().toLowerCase();
 
-  const statusColors = {
-    "En Diagnóstico": "bg-blue-50 text-blue-700 w-24 h-10 flex items-center justify-center text-center",
-    "En espera de aprobación por cliente": "bg-yellow-50 text-yellow-700 w-24 h-10 flex items-center justify-center text-center",
-    "En servicio": "bg-orange-50 text-orange-700 w-24 h-10 flex items-center justify-center text-center",
-    "Pieza lista para entrega": "bg-purple-50 text-purple-700 w-24 h-10 flex items-center justify-center text-center"
-  };
-
-  const priorityColors = {
-    "Alta": "bg-red-50 text-red-600 border border-red-200 w-24 text-center",
-    "Media": "bg-yellow-50 text-yellow-600 border border-yellow-200 w-24 text-center",
-    "Baja": "bg-green-50 text-green-600 border border-green-200 w-20 text-center",
-  };
-
-  const handleDeleteOrder = async (orderId, orderNumber) => {
-    const result = await showConfirmAlert(
-      'Eliminar Orden',
-      `¿Está seguro que desea eliminar permanentemente la orden ${orderNumber}? Esta acción no se puede deshacer.`,
-      'Eliminar',
-      'Cancelar'
-    );
-    
-    if (result.isConfirmed) {
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/orders/${orderId}`, {
-          method: 'DELETE'
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-          const updatedOrders = orders.filter(order => order.id !== orderId);
-          setOrders(updatedOrders);
-          
-          await showSuccessAlert(
-            'Orden Eliminada',
-            `La orden ${orderNumber} ha sido eliminada correctamente.`
-          );
-        } else {
-          throw new Error(data.error || 'Error al eliminar');
-        }
-      } catch (error) {
-        console.error('Error eliminando orden:', error);
-        await showErrorAlert(
-          'Error',
-          error.message || 'No se pudo eliminar la orden'
-        );
-      }
-    }
-  };
-
-  const handleStatusChange = async (orderId, currentStatus) => {
-    const statusSelect = document.createElement('select');
-    statusSelect.className = 'w-full p-2 border border-[#e8e2d9] mt-2';
-    
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'Seleccione un estado';
-    defaultOption.disabled = true;
-    statusSelect.appendChild(defaultOption);
-    
-    masterData.statuses.forEach(status => {
-      const option = document.createElement('option');
-      option.value = status.id;
-      option.textContent = status.name;
-      option.selected = status.name === currentStatus;
-      statusSelect.appendChild(option);
-    });
-
-    const result = await showConfirmAlert(
-      'Cambiar Estado',
-      `Seleccione el nuevo estado para la orden:`,
-      'Actualizar',
-      'Cancelar',
-      statusSelect
-    );
-    
-    if (result.isConfirmed) {
-      const newStatusId = parseInt(statusSelect.value);
-      const newStatusName = masterData.statuses.find(s => s.id === newStatusId)?.name;
-      
-      if (!newStatusId || !newStatusName) {
-        await showErrorAlert('Error', 'Estado inválido seleccionado');
-        return;
-      }
-      
-      try {
-        const response = await api.updateStatus(orderId, newStatusId);
-        
-        if (response.success) {
-          // Actualizar estado localmente
-          const updatedOrders = orders.map(order => 
-            order.id === orderId 
-              ? { 
-                  ...order, 
-                  estado: newStatusName,
-                  estado_id: newStatusId 
-                }
-              : order
-          );
-          
-          setOrders(updatedOrders);
-          
-          await showSuccessAlert(
-            'Estado Actualizado',
-            `El estado ha sido cambiado a "${newStatusName}".`
-          );
-        }
-      } catch (error) {
-        console.error('Error actualizando estado:', error);
-        await showErrorAlert(
-          'Error',
-          error.message || 'No se pudo actualizar el estado'
-        );
-      }
-    }
-  };
-
-
-  let filteredOrders = orders.filter(order => {
-    const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
+      !searchLower ||
       order.order_number?.toLowerCase().includes(searchLower) ||
       order.client_name?.toLowerCase().includes(searchLower) ||
       order.device_type?.toLowerCase().includes(searchLower) ||
       order.device_brand?.toLowerCase().includes(searchLower) ||
       order.device_model?.toLowerCase().includes(searchLower);
-    
-    const matchesStatus = statusFilter === 'Todas las órdenes' || order.estado === statusFilter;
-    const matchesPriority = priorityFilter === 'Todas' || order.prioridad === priorityFilter;
-    
+
+    // Comparación case-insensitive para evitar mismatches de capitalización/acentos
+    const matchesStatus =
+      statusFilter === 'Todas las órdenes' ||
+      order.estado?.trim().toLowerCase() === statusFilter.trim().toLowerCase();
+
+    const matchesPriority =
+      priorityFilter === 'Todas' ||
+      order.prioridad?.trim().toLowerCase() === priorityFilter.trim().toLowerCase();
+
     return matchesSearch && matchesStatus && matchesPriority;
   });
+
   filteredOrders.sort((a, b) => {
     if (sortBy === 'received_date') {
       const dateA = new Date(a.fecha_iso || a.received_date);
       const dateB = new Date(b.fecha_iso || b.received_date);
       return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
     } else if (sortBy === 'priority') {
-      const priorityOrder = { "Alta": 3, "Media": 2, "Baja": 1 };
-      const priorityA = priorityOrder[a.prioridad] || 0;
-      const priorityB = priorityOrder[b.prioridad] || 0;
+      const priorityOrder = { "alta": 3, "media": 2, "baja": 1 };
+      const priorityA = priorityOrder[a.prioridad?.toLowerCase()] || 0;
+      const priorityB = priorityOrder[b.prioridad?.toLowerCase()] || 0;
       return sortOrder === 'desc' ? priorityB - priorityA : priorityA - priorityB;
     } else if (sortBy === 'order_number') {
       const numA = a.order_number || '';
       const numB = b.order_number || '';
-      return sortOrder === 'desc' 
+      return sortOrder === 'desc'
         ? numB.localeCompare(numA)
         : numA.localeCompare(numB);
     }
@@ -241,9 +107,113 @@ export default function OrdersList() {
     return sortOrder === 'asc' ? '↑' : '↓';
   };
 
+  // ─── Colores ──────────────────────────────────────────────────────────────
+  const statusColors = {
+    "En Diagnóstico": "bg-blue-50 text-blue-700 w-24 h-10 flex items-center justify-center text-center",
+    "En espera de aprobación por cliente": "bg-yellow-50 text-yellow-700 w-24 h-10 flex items-center justify-center text-center",
+    "En servicio": "bg-orange-50 text-orange-700 w-24 h-10 flex items-center justify-center text-center",
+    "Pieza lista para entrega": "bg-purple-50 text-purple-700 w-24 h-10 flex items-center justify-center text-center"
+  };
 
+  const priorityColors = {
+    "Alta": "bg-red-50 text-red-600 border border-red-200 w-24 text-center",
+    "Media": "bg-yellow-50 text-yellow-600 border border-yellow-200 w-24 text-center",
+    "Baja": "bg-green-50 text-green-600 border border-green-200 w-20 text-center",
+  };
 
-  if (loading && orders.length === 0) {
+  // ─── Acciones ─────────────────────────────────────────────────────────────
+ const handleDeleteOrder = async (orderId, orderNumber) => {
+  const result = await showConfirmAlert(
+    'Eliminar Orden',
+    `¿Está seguro que desea eliminar permanentemente la orden ${orderNumber}? Esta acción no se puede deshacer.`,
+    'Eliminar',
+    'Cancelar'
+  );
+
+  if (result.isConfirmed) {
+    try {
+      const data = await api.deleteOrder(orderId);
+
+      if (data.success) {
+        setAllOrders(prev => prev.filter(order => order.id !== orderId));
+
+        await showSuccessAlert(
+          'Orden Eliminada',
+          `La orden ${orderNumber} ha sido eliminada correctamente.`
+        );
+      } else {
+        throw new Error(data.error || 'Error al eliminar');
+      }
+
+    } catch (error) {
+      console.error('Error eliminando orden:', error);
+
+      await showErrorAlert(
+        'Error',
+        error.message || 'No se pudo eliminar la orden'
+      );
+    }
+  }
+};
+
+  const handleStatusChange = async (orderId, currentStatus) => {
+    const statusSelect = document.createElement('select');
+    statusSelect.className = 'w-full p-2 border border-[#e8e2d9] mt-2';
+
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = 'Seleccione un estado';
+    defaultOption.disabled = true;
+    statusSelect.appendChild(defaultOption);
+
+    masterData.statuses.forEach(status => {
+      const option = document.createElement('option');
+      option.value = status.id;
+      option.textContent = status.name;
+      option.selected = status.name === currentStatus;
+      statusSelect.appendChild(option);
+    });
+
+    const result = await showConfirmAlert(
+      'Cambiar Estado',
+      `Seleccione el nuevo estado para la orden:`,
+      'Actualizar',
+      'Cancelar',
+      statusSelect
+    );
+
+    if (result.isConfirmed) {
+      const newStatusId = parseInt(statusSelect.value);
+      const newStatusName = masterData.statuses.find(s => s.id === newStatusId)?.name;
+
+      if (!newStatusId || !newStatusName) {
+        await showErrorAlert('Error', 'Estado inválido seleccionado');
+        return;
+      }
+
+      try {
+        const response = await api.updateStatus(orderId, newStatusId);
+
+        if (response.success) {
+          setAllOrders(prev =>
+            prev.map(order =>
+              order.id === orderId
+                ? { ...order, estado: newStatusName, estado_id: newStatusId }
+                : order
+            )
+          );
+
+          await showSuccessAlert('Estado Actualizado', `El estado ha sido cambiado a "${newStatusName}".`);
+        }
+      } catch (error) {
+        console.error('Error actualizando estado:', error);
+        await showErrorAlert('Error', error.message || 'No se pudo actualizar el estado');
+      }
+    }
+  };
+
+  // ─── Render ───────────────────────────────────────────────────────────────
+  if (loading && allOrders.length === 0) {
     return (
       <AdminLayout>
         <div className="max-w-7xl mx-auto">
@@ -292,24 +262,24 @@ export default function OrdersList() {
             />
           </div>
           <div className="flex space-x-2">
-            <select 
+            <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="flex-1 px-4 py-3 border border-[#e8e2d9] focus:border-[#6B4E2E] focus:outline-none transition-colors duration-200"
             >
               <option>Todas las órdenes</option>
               {masterData.statuses.map(status => (
-                <option key={status.id}>{status.name}</option>
+                <option key={status.id} value={status.name}>{status.name}</option>
               ))}
             </select>
-            <select 
+            <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
               className="flex-1 px-4 py-3 border border-[#e8e2d9] focus:border-[#6B4E2E] focus:outline-none transition-colors duration-200"
             >
               <option>Todas</option>
               {masterData.priorities.map(priority => (
-                <option key={priority.id}>{priority.name}</option>
+                <option key={priority.id} value={priority.name}>{priority.name}</option>
               ))}
             </select>
           </div>
@@ -321,7 +291,7 @@ export default function OrdersList() {
           <table className="w-full">
             <thead>
               <tr className="bg-[#faf8f5]">
-                <th 
+                <th
                   className="p-4 text-left text-sm font-medium text-[#B08968] cursor-pointer hover:text-[#6B4E2E]"
                   onClick={() => handleSort('order_number')}
                 >
@@ -332,7 +302,7 @@ export default function OrdersList() {
                 </th>
                 <th className="p-4 text-left text-sm font-medium text-[#B08968]">Cliente</th>
                 <th className="p-4 text-left text-sm font-medium text-[#B08968]">Pieza</th>
-                <th 
+                <th
                   className="p-4 text-left text-sm font-medium text-[#B08968] cursor-pointer hover:text-[#6B4E2E]"
                   onClick={() => handleSort('received_date')}
                 >
@@ -342,7 +312,7 @@ export default function OrdersList() {
                   </div>
                 </th>
                 <th className="p-4 text-left text-sm font-medium text-[#B08968]">Estado</th>
-                <th 
+                <th
                   className="p-4 text-left text-sm font-medium text-[#B08968] cursor-pointer hover:text-[#6B4E2E]"
                   onClick={() => handleSort('priority')}
                 >
@@ -440,21 +410,20 @@ export default function OrdersList() {
                 setSearchTerm('');
                 setStatusFilter('Todas las órdenes');
                 setPriorityFilter('Todas');
-                loadInitialData();
               }}
               className="mt-4 text-sm text-[#ff8c00] hover:text-[#e67e00] transition-colors duration-200"
             >
-              Limpiar filtros y recargar
+              Limpiar filtros
             </button>
           </div>
         )}
 
         <div className="p-4 border-t border-[#e8e2d9] flex justify-between items-center">
           <p className="text-sm text-[#B08968] font-light">
-            Mostrando {filteredOrders.length} de {orders.length} órdenes
+            Mostrando {filteredOrders.length} de {allOrders.length} órdenes
           </p>
           <div className="flex space-x-2">
-            <button 
+            <button
               className="px-3 py-1 border border-[#e8e2d9] rounded text-sm font-light text-[#6B4E2E] hover:bg-[#faf8f5]"
               onClick={loadInitialData}
             >

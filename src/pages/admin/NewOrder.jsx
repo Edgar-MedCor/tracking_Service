@@ -295,10 +295,10 @@ export default function NewOrder() {
                   name="order_number"
                   value={formData.order_number}
                   onChange={handleChange}
-                  placeholder="Ej: ORD-2026-001"
+                  placeholder="Ej: 0001"
                   className={`w-full px-4 py-3 border ${errors.order_number ? 'border-red-500' : 'border-[#e8e2d9]'} focus:border-[#6B4E2E] focus:outline-none transition-colors duration-200`}
-                  required
-                  disabled={loading}
+                  required  
+                  disabled={loading}pm2
                   maxLength="50"
                 />
                 {errors.order_number && (

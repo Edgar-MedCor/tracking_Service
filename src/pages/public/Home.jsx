@@ -274,7 +274,7 @@ export default function Home() {
                   value={orderNumber}
                   onChange={(e) => setOrderNumber(e.target.value)}
                   placeholder="Número de orden"
-                  className="w-full px-6 py-4 border border-gray-200 text-center text-gray-500 focus:outline-none -ml-[7px] focus:ring-1 focus:ring-[#ff8c00]"
+                  className="w-full px-6 py-4 border border-gray-200 text-center text-gray-500 focus:outline-none -ml-1.75 focus:ring-1 focus:ring-[#ff8c00]"
                   disabled={loading}
                 />
 
@@ -325,7 +325,7 @@ export default function Home() {
               <div className="relative flex items-center justify-between">
                 <div className="absolute top-1/2 left-0 w-full h-1 bg-gray-200 -translate-y-1/2 z-0" />
 
-                <div
+                <div  
                   className="absolute top-1/2 left-0 h-1 bg-[#ff8c00] -translate-y-1/2 transition-all duration-500 z-0"
                   style={{ width: `${progressPercent}%` }}
                 />

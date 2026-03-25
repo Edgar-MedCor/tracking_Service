@@ -3,26 +3,72 @@ import { showConfirmAlert } from "../../utils/alerts";
 import { supabase } from "../../services/supabase";
 import { useEffect, useState } from "react";
 
+
+
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    const result = await showConfirmAlert(
-      "Cerrar Sesión",
-      "¿Está seguro que desea cerrar la sesión?",
-    );
+  const MAX_IDLE_TIME =  60 * 1000; 
+const LAST_ACTIVITY_KEY = "last_activity";
 
-    if (!result.isConfirmed) return;
 
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error("Error al cerrar sesión:", error);
-      return;
-    }
-
-    navigate("/");
+  useEffect(() => {
+  const updateActivity = () => {
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
   };
+
+ 
+  window.addEventListener("mousemove", updateActivity);
+  window.addEventListener("keydown", updateActivity);
+  window.addEventListener("click", updateActivity);
+  window.addEventListener("scroll", updateActivity);
+
+
+  updateActivity();
+
+  return () => {
+    window.removeEventListener("mousemove", updateActivity);
+    window.removeEventListener("keydown", updateActivity);
+    window.removeEventListener("click", updateActivity);
+    window.removeEventListener("scroll", updateActivity);
+  };
+}, []);
+
+useEffect(() => {
+  const checkIdle = async () => {
+    const lastActivity = localStorage.getItem(LAST_ACTIVITY_KEY);
+
+    if (!lastActivity) return;
+
+    const idleTime = Date.now() - Number(lastActivity);
+
+    if (idleTime > MAX_IDLE_TIME) {
+      await supabase.auth.signOut();
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      alert("Sesión caducada por inactividad");
+      navigate("/");
+    }
+  };
+
+  const interval = setInterval(checkIdle, 60 * 1000); // cada 1 min
+
+  return () => clearInterval(interval);
+}, [navigate]);
+
+
+const handleLogout = async () => {
+  const result = await showConfirmAlert(
+    "Cerrar sesión",
+    "¿Está seguro que desea cerrar la sesión?"
+  );
+
+  if (!result.isConfirmed) return;
+
+  await supabase.auth.signOut();
+  localStorage.removeItem(LAST_ACTIVITY_KEY);
+  navigate("/");
+};
+
   const [user, setUser] = useState(null);
   useEffect(() => {
     const getUser = async () => {
