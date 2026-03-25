@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
 
-const MAX_IDLE_TIME =  60 * 1000; 
+const MAX_IDLE_TIME = 30 * 60 * 1000; 
 const LAST_ACTIVITY_KEY = "last_activity";
 
 
