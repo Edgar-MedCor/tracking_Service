@@ -2,6 +2,8 @@ import AdminLayout from "./AdminLayout";
 import { Link } from "react-router-dom";
 import { showInfoAlert, showErrorAlert } from "../../utils/alerts";
 import { useState, useEffect } from "react";
+import { api } from "../../services/api";
+
 
 const ORDER_STATUSES = {
   EN_DIAGNOSTICO: {
@@ -117,16 +119,12 @@ export default function Dashboard() {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
+const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/dashboard/stats`,
-      );
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
+      
+      // 👉 CAMBIO 1: Llamamos a tu servicio seguro en lugar de usar fetch()
+      const data = await api.getDashboardStats();
 
       if (data.success) {
         setDashboardData(data.stats);
@@ -159,16 +157,9 @@ export default function Dashboard() {
       try {
         console.log("Intentando carga alternativa...");
 
-        // Cargar datos de manera manual
-        const ordersResponse = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/orders`,
-        );
-        const mastersResponse = await fetch(
-          `${import.meta.env.VITE_API_URL}/api/orders/data/masters`,
-        );
-
-        const ordersData = await ordersResponse.json();
-        const mastersData = await mastersResponse.json();
+        // 👉 CAMBIO 2: Reemplazamos los fetch() del fallback por tu api segura
+        const ordersData = await api.getOrders();
+        const mastersData = await api.getMasterData();
 
         if (ordersData.success && mastersData.success) {
           const orders = ordersData.orders || [];

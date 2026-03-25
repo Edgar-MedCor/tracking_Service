@@ -45,6 +45,7 @@ export const api = {
   getOrders: () => request("/orders"),
   getOrder: (id) => request(`/orders/${id}`),
   searchOrders: (term) => request(`/orders/search/${term}`),
+  getDashboardStats: () => request("/dashboard/stats"),
 
   createOrder: (orderData) =>
     request("/orders", {
