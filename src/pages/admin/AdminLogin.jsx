@@ -81,7 +81,7 @@ useEffect(() => {
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center
              ">
-            <img src="public\new-logo-ultrajewels.svg" alt="Logo UltraJewels" className="w-40 h-40" />
+            <img src="dist\assets\new-logo-ultrajewels.svg" alt="Logo UltraJewels" className="w-40 h-40" />
           </div>
           <p className="text-[#6B4E2E] text-sm font-light mt-2 tracking-wider">
           ACCESO AL PANEL DE ADMINISTRACIÓN
