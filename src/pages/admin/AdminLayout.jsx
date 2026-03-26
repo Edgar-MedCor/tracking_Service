@@ -113,7 +113,7 @@ const handleLogout = async () => {
         {/* Navigation */}
         <nav className="p-4 space-y-1 flex-1">
           <Link
-            to="/dashboard"
+            to="/admin/dashboard"
             className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-[#6B4E2E] hover:bg-[#f9f6f0] hover:text-[#D4A017] transition-all duration-200 group"
           >
             <svg

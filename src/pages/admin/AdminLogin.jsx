@@ -50,7 +50,7 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
 useEffect(() => {
-  if (session) navigate("/dashboard");
+  if (session) navigate("/admin/dashboard");
 }, [session]);
 
 
