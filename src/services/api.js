@@ -16,20 +16,26 @@ async function request(url, options = {}) {
 
   const token = data?.session?.access_token;
 
-if (!token) {
-  await supabase.auth.signOut();
-  window.location.href = "/";
-  return;
-}
+  if (!token) {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+    return;
+  }
 
+  // Preparamos los headers base
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    ...options.headers,
+  };
+
+
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = headers["Content-Type"] || "application/json";
+  }
 
   const res = await fetch(`${API}${url}`, {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
     ...options,
+    headers,
   });
 
   if (!res.ok) {
@@ -39,7 +45,6 @@ if (!token) {
 
   return res.json();
 }
-
 
 export const api = {
   getOrders: () => request("/orders"),
@@ -71,24 +76,32 @@ export const api = {
       body: JSON.stringify({ status_id }),
     }),
 
+  updateOrder: (id, data) =>
+    request(`/orders/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 
-    updateOrder: (id, data) =>
-  request(`/orders/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(data),
-  }),
+  updatePriority: (id, priority_id) =>
+    request(`/orders/${id}/priority`, {
+      method: "PATCH",
+      body: JSON.stringify({ priority_id }),
+    }),
 
-updatePriority: (id, priority_id) =>
-  request(`/orders/${id}/priority`, {
-    method: "PATCH",
-    body: JSON.stringify({ priority_id }),
-  }),
+  deleteNote: (orderId, noteId) =>
+    request(`/notes/${orderId}/notes/${noteId}`, {
+      method: "DELETE",
+    }),
 
-deleteNote: (orderId, noteId) =>
-  request(`/notes/${orderId}/notes/${noteId}`, {
-    method: "DELETE",
-  }),
+  
+  uploadFile: (orderId, formData) =>
+    request(`/orders/${orderId}/files`, {
+      method: "POST",
+      body: formData, // Se envía el FormData directamente, sin JSON.stringify
+    }),
 
+  deleteFile: (orderId, fileId) =>
+    request(`/orders/${orderId}/files/${fileId}`, {
+      method: "DELETE",
+    }),
 };
-
-

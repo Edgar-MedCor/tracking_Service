@@ -108,12 +108,12 @@ export default function OrdersList() {
   };
 
   // ─── Colores ──────────────────────────────────────────────────────────────
-  const statusColors = {
-    "En Diagnóstico": "bg-blue-50 text-blue-700 w-24 h-10 flex items-center justify-center text-center",
-    "En espera de aprobación por cliente": "bg-yellow-50 text-yellow-700 w-24 h-10 flex items-center justify-center text-center",
-    "En servicio": "bg-orange-50 text-orange-700 w-24 h-10 flex items-center justify-center text-center",
-    "Pieza lista para entrega": "bg-purple-50 text-purple-700 w-24 h-10 flex items-center justify-center text-center"
-  };
+  // const statusColors = {
+  //   "En Diagnóstico": "bg-blue-50 text-blue-700 w-24 h-10 flex items-center justify-center text-center",
+  //   "En espera de aprobación por cliente": "bg-yellow-50 text-yellow-700 w-24 h-10 flex items-center justify-center text-center",
+  //   "En servicio": "bg-orange-50 text-orange-700 w-24 h-10 flex items-center justify-center text-center",
+  //   "Pieza lista para entrega": "bg-purple-50 text-purple-700 w-24 h-10 flex items-center justify-center text-center"
+  // };
 
   const priorityColors = {
     "Alta": "bg-red-50 text-red-600 border border-red-200 w-24 text-center",
@@ -156,59 +156,44 @@ export default function OrdersList() {
   }
 };
 
-  const handleStatusChange = async (orderId, currentStatus) => {
-    const statusSelect = document.createElement('select');
-    statusSelect.className = 'w-full p-2 border border-[#e8e2d9] mt-2';
-
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'Seleccione un estado';
-    defaultOption.disabled = true;
-    statusSelect.appendChild(defaultOption);
-
-    masterData.statuses.forEach(status => {
-      const option = document.createElement('option');
-      option.value = status.id;
-      option.textContent = status.name;
-      option.selected = status.name === currentStatus;
-      statusSelect.appendChild(option);
-    });
-
+  const handleStatusChange = async (orderId, currentStatusName, newStatusId) => {
+    const parsedStatusId = parseInt(newStatusId, 10);
+    const newStatus = masterData.statuses.find(status => status.id === parsedStatusId);
+    if (!newStatus) {
+      await showErrorAlert('Error', 'Estado invalido seleccionado');
+      return;
+    }
+    if (newStatus.name === currentStatusName) {
+      return;
+    }
     const result = await showConfirmAlert(
       'Cambiar Estado',
-      `Seleccione el nuevo estado para la orden:`,
-      'Actualizar',
-      'Cancelar',
-      statusSelect
+      `Cambiar estado de "${currentStatusName}" a "${newStatus.name}"?`
     );
-
-    if (result.isConfirmed) {
-      const newStatusId = parseInt(statusSelect.value);
-      const newStatusName = masterData.statuses.find(s => s.id === newStatusId)?.name;
-
-      if (!newStatusId || !newStatusName) {
-        await showErrorAlert('Error', 'Estado inválido seleccionado');
-        return;
+    if (!result.isConfirmed) {
+      return;
+    }
+    try {
+      const response = await api.updateStatus(orderId, newStatus.id);
+      if (response.success) {
+        setAllOrders(prev =>
+          prev.map(order =>
+            order.id === orderId
+              ? {
+                  ...order,
+                  estado: newStatus.name,
+                  estado_id: newStatus.id,
+                  status_id: newStatus.id,
+                  status_name: newStatus.name
+                }
+              : order
+          )
+        );
+        await showSuccessAlert('Estado Actualizado', `El estado ha sido cambiado a "${newStatus.name}".`);
       }
-
-      try {
-        const response = await api.updateStatus(orderId, newStatusId);
-
-        if (response.success) {
-          setAllOrders(prev =>
-            prev.map(order =>
-              order.id === orderId
-                ? { ...order, estado: newStatusName, estado_id: newStatusId }
-                : order
-            )
-          );
-
-          await showSuccessAlert('Estado Actualizado', `El estado ha sido cambiado a "${newStatusName}".`);
-        }
-      } catch (error) {
-        console.error('Error actualizando estado:', error);
-        await showErrorAlert('Error', error.message || 'No se pudo actualizar el estado');
-      }
+    } catch (error) {
+      console.error('Error actualizando estado:', error);
+      await showErrorAlert('Error', error.message || 'No se pudo actualizar el estado');
     }
   };
 
@@ -361,9 +346,24 @@ export default function OrdersList() {
                     <p className="text-sm text-[#B08968] font-light">{order.fecha}</p>
                   </td>
                   <td className="p-4">
-                    <span className={`inline-flex items-center px-3 py-1 text-xs font-medium ${statusColors[order.estado] || 'bg-gray-100 text-gray-800'}`}>
-                      {order.estado || 'Sin estado'}
-                    </span>
+                    <div className="relative w-48">
+                      <select
+                        value={order.status_id || order.estado_id || ''}
+                        onChange={(e) => handleStatusChange(order.id, order.status_name || order.estado, e.target.value)}
+                        className="w-full px-3 py-2 border border-[#e8e2d9] text-sm font-light text-[#6B4E2E] focus:outline-none appearance-none pr-8"
+                      >
+                        {masterData.statuses.map((status) => (
+                          <option key={status.id} value={status.id}>
+                            {status.name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#B08968]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
                   </td>
                   <td className="p-4">
                     <span className={`inline-block px-3 py-1 text-xs font-medium ${priorityColors[order.prioridad] || 'bg-gray-50 text-gray-600 border border-gray-200'}`}>
@@ -435,3 +435,6 @@ export default function OrdersList() {
     </AdminLayout>
   );
 }
+
+
+

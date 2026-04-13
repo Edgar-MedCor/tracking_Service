@@ -398,7 +398,7 @@ const loadMasterData = async () => {
               
               <div>
                 <label className="block text-sm text-[#B08968] font-light mb-2">
-                  TELÉFONO *
+                  TELÉFONO 
                 </label>
                 <input 
                   type="tel" 
@@ -409,7 +409,6 @@ const loadMasterData = async () => {
                   className={`w-full px-4 py-3 border ${errors.client_phone ? 'border-red-500' : 'border-[#e8e2d9]'} focus:border-[#6B4E2E] focus:outline-none transition-colors duration-200`}
                   disabled={loading}
                   maxLength="20"
-                 required
                 />
                 {errors.client_phone && (
                   <p className="text-red-500 text-xs mt-1">{errors.client_phone}</p>

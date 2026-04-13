@@ -1,6 +1,6 @@
 import AdminLayout from "./AdminLayout";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -14,14 +14,17 @@ export default function OrderDetail() {
 
   const [order, setOrder] = useState(null);
   const [notes, setNotes] = useState([]);
+  const [files, setFiles] = useState([]); 
   const [masterData, setMasterData] = useState({
     priorities: [],
     statuses: [],
   });
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); 
   const [editData, setEditData] = useState({});
   const [newNote, setNewNote] = useState("");
+  const fileInputRef = useRef(null); 
 
   const statusColors = {
     "En Diagnóstico": "bg-blue-50 text-blue-700",
@@ -52,6 +55,7 @@ export default function OrderDetail() {
       if (response.success) {
         setOrder(response.order);
         setNotes(response.bitacora?.notas || []);
+        setFiles(response.archivos || []); 
 
         // Preparar datos para edición
         setEditData({
@@ -74,11 +78,10 @@ export default function OrderDetail() {
       setLoading(false);
     }
   };
-const loadMasterData = async () => {
+
+  const loadMasterData = async () => {
     try {
-
       const response = await api.getMasterData();
-
       if (response.success) {
         setMasterData({
           priorities: response.priorities || [],
@@ -90,6 +93,54 @@ const loadMasterData = async () => {
     }
   };
 
+  // --- FUNCIONES PARA ARCHIVOS ADJUNTOS ---
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+   
+    if (file.size > 5 * 1024 * 1024) return showErrorAlert("Error", "El archivo debe ser menor a 5MB");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      setIsUploading(true);
+      const response = await api.uploadFile(id, formData);
+
+      if (response.success) {
+        setFiles((prev) => [response.file, ...prev]); 
+        await showSuccessAlert("¡Archivo Subido!", "El archivo se ha adjuntado correctamente a la orden.");
+      }
+    } catch (error) {
+      console.error("Error subiendo archivo:", error);
+      await showErrorAlert("Error", "No se pudo subir el archivo.");
+    } finally {
+      setIsUploading(false);
+      // Limpiamos el input para permitir subir el mismo archivo otra vez si fuera necesario
+      if (fileInputRef.current) fileInputRef.current.value = ""; 
+    }
+  };
+
+  const handleDeleteFile = async (fileId) => {
+    const result = await showConfirmAlert("Eliminar Archivo", "¿Estás seguro de que deseas eliminar este archivo de forma permanente?");
+
+    if (!result.isConfirmed) return;
+
+    try {
+      const response = await api.deleteFile(id, fileId);
+
+      if (response.success) {
+        setFiles((prev) => prev.filter((f) => f.id !== fileId));
+        await showSuccessAlert("Archivo eliminado", "El archivo se ha eliminado correctamente.");
+      }
+    } catch (error) {
+      console.error("Error eliminando archivo:", error);
+      await showErrorAlert("Error", "No se pudo eliminar el archivo.", error.message);
+    }
+  };
+  // ----------------------------------------
+
   // Manejar edición
   const handleEditClick = () => {
     setIsEditing(true);
@@ -100,11 +151,7 @@ const loadMasterData = async () => {
   const handleSaveChanges = async () => {
     const requiredFields = [
       "client_name",
-      "client_phone",
-      "client_email",
       "device_type",
-      "device_brand",
-      "device_model",
     ];
 
     const newErrors = {};
@@ -705,8 +752,9 @@ const loadMasterData = async () => {
             </div>
           </div>
 
-          {/* Columna central - Detalles y bitácora */}
+          {/* Columna central - Detalles, Archivos y Bitácora */}
           <div className="lg:col-span-2 space-y-6">
+            
             {/* Detalles de la pieza */}
             <div className="bg-white p-6 border border-[#e8e2d9]">
               <h2 className="font-light text-lg text-[#6B4E2E] mb-4">
@@ -817,6 +865,84 @@ const loadMasterData = async () => {
                 </div>
               </div>
             </div>
+
+            {/* --- SECCIÓN DE ARCHIVOS ADJUNTOS --- */}
+            <div className="bg-white p-6 border border-[#e8e2d9]">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-light text-lg text-[#6B4E2E]">
+                  Archivos Adjuntos ({files.length})
+                </h2>
+                <div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="cursor-pointer px-4 py-2 border border-[#ff8c00] text-[#ff8c00] text-sm font-light hover:bg-[#fff5e6] transition-colors duration-200 flex items-center space-x-2"
+                  >
+                    {isUploading ? (
+                      <span className="animate-spin h-4 w-4 border-2 border-[#ff8c00] border-t-transparent rounded-full"></span>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                    )}
+                    <span>{isUploading ? "Subiendo..." : "Adjuntar Archivo"}</span>
+                  </label>
+                </div>
+              </div>
+
+              {files.length > 0 ? (
+                <div className="space-y-3">
+                  {files.map((file) => (
+                    <div key={file.id} className="flex justify-between items-center p-3 border border-[#e8e2d9] bg-[#faf8f5] hover:bg-white transition-colors duration-200">
+                      <div className="flex items-center space-x-3 overflow-hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#B08968] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-sm text-[#6B4E2E] truncate font-light" title={file.file_name}>
+                          {file.file_name}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 flex-shrink-0">
+                        {/* Botón Descargar */}
+                        <a
+                          href={file.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={file.file_name}
+                          className="text-[#6B4E2E] hover:text-[#ff8c00] transition-colors duration-200 p-1"
+                          title="Descargar o Ver"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                        </a>
+                        {/* Botón Eliminar */}
+                        <button
+                          onClick={() => handleDeleteFile(file.id)}
+                          className="text-[#B08968] hover:text-red-600 transition-colors duration-200 p-1"
+                          title="Eliminar archivo"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[#B08968] font-light italic text-center py-4 bg-[#faf8f5] border border-[#e8e2d9] rounded">
+                  Aún no hay archivos adjuntos en esta orden.
+                </p>
+              )}
+            </div>
+            {/* -------------------------------------- */}
 
             {/* Bitácora */}
             <div className="bg-white p-6 border border-[#e8e2d9]">
